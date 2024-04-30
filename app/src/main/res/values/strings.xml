@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">BPM Heart Beat</string>
+    <!--
+    This string is used for square devices and overridden by hello_world in
+    values-round/strings.xml for round devices.
+    -->
+    <string name="hello_world">From the Square world,\nHello, %1$s!</string>
+    <string name="heart_rate">Heart Rate:</string>
+    <string name="volume_sound">Volume Sound:</string>
+    <string name="frequency_time">Frequency Time:</string>
+    <string name="volume_up">Vol.Up</string>
+    <string name="volume_down">Vol.Down</string>
+    <string name="set_frequency">Reps</string>
+    <string name="send_via_bluetooth">Send</string>
+</resources>

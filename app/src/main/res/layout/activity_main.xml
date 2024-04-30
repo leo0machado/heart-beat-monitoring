@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.wear.widget.BoxInsetLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:padding="12dp"
+    tools:ignore="MissingClass">
+    <!--total size: 227dp x 227dp-->
+
+    <TextView
+        android:id="@+id/heartRateTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/heart_rate"
+        android:gravity="center"
+        android:layout_gravity="center_horizontal"
+        android:textSize="16sp"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop= "90dp"
+        />
+
+    <TextView
+        android:id="@+id/volumeTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/volume_sound"
+        android:gravity="center"
+        android:layout_gravity="center_horizontal"
+        android:textSize="8sp"
+        android:layout_marginStart="0dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginTop="0dp"
+        />
+
+    <Button
+        android:id="@+id/volumeUpButton"
+        android:background="@drawable/oval_button_background"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_below="@id/volumeTextView"
+        android:text="@string/volume_up"
+        android:textSize="8sp"
+        android:layout_marginStart="110dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginTop="25dp"/>
+
+    <Button
+        android:id="@+id/volumeDownButton"
+        android:background="@drawable/oval_button_background"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:textSize="8sp"
+        android:layout_below="@id/volumeUpButton"
+        android:text="@string/volume_down"
+        android:layout_marginStart="40dp"
+        android:layout_marginEnd="0dp"
+        android:layout_marginTop="25dp"
+        />
+
+    <Button
+        android:id="@+id/frequencyButton"
+        android:layout_width="50dp"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/volumeDownButton"
+        android:layout_marginStart="40dp"
+        android:layout_marginTop="140dp"
+        android:layout_marginEnd="0dp"
+        android:background="@drawable/oval_button_background"
+        android:text="@string/set_frequency"
+        android:textSize="8sp" />
+
+    <Button
+        android:id="@+id/bluetoothButton"
+        android:background="@drawable/oval_button_background"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:textSize="8sp"
+        android:layout_below="@id/frequencyButton"
+        android:layout_marginStart="110dp"
+        android:layout_marginEnd= "0dp"
+        android:layout_marginTop="140dp"
+        android:text="@string/send_via_bluetooth" />
+
+</androidx.wear.widget.BoxInsetLayout>

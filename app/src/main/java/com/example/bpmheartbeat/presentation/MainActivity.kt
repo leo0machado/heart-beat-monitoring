@@ -10,8 +10,6 @@ package com.example.bpmheartbeat.presentation
 
 import android.Manifest
 import android.app.AlertDialog
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothSocket
 import android.content.Context
 import android.content.pm.PackageManager
 import android.hardware.Sensor
@@ -19,39 +17,54 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.os.ParcelUuid
-import android.system.Os.socket
 import android.util.Log
 import android.widget.Button
+import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.compose.ui.res.stringResource
+import androidx.concurrent.futures.await
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.health.services.client.HealthServices
+import androidx.health.services.client.MeasureCallback
+import androidx.health.services.client.data.Availability
+import androidx.health.services.client.data.DataPointContainer
+import androidx.health.services.client.data.DataType
+import androidx.health.services.client.data.DataTypeAvailability
+import androidx.health.services.client.data.DeltaDataType
+import androidx.health.services.client.getCapabilities
 import com.example.bpmheartbeat.R
-import com.google.android.gms.wearable.DataClient
-import com.google.android.gms.wearable.DataEvent
-import com.google.android.gms.wearable.DataEventBuffer
-import com.google.android.gms.wearable.Wearable
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
-import java.io.OutputStream
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.InputStreamReader
+import java.io.OutputStreamWriter
+import java.net.HttpURLConnection
+import java.net.URL
 
 
 class MainActivity : ComponentActivity(), SensorEventListener {
     private lateinit var heartRateTextView: TextView
-    private lateinit var volumeTextView: TextView
-    private lateinit var volumeUpButton: Button
-    private lateinit var volumeDownButton: Button
+    private lateinit var heartRateValueTextView: TextView
+    private lateinit var volumeUpButton: ImageButton
+    private lateinit var volumeDownButton: ImageButton
     private lateinit var frequencyButton: Button
     private lateinit var bluetoothButton: Button
+    private lateinit var volumeProgressBar: SemicircleProgressBar
 
     private var volumeSound = 5
     private var frequencyTime = 10
     private val frequencyOptions = arrayOf("10", "30", "60")
-    private var heartRateValue = 0
+    private var heartRateValue = 60
     private lateinit var sensorManager: SensorManager
     private var heartRateSensor: Sensor? = null
     private var deviceAddress = "00:00:00:00:00:00"
+
 
     // Check App Permissions
     private val PERMISSIONS_STORAGE = arrayOf(
@@ -91,19 +104,20 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
         // Initialize views
         heartRateTextView = findViewById(R.id.heartRateTextView)
-        volumeTextView = findViewById(R.id.volumeTextView)
+        heartRateValueTextView = findViewById(R.id.heartRateValueTextView)
         volumeUpButton = findViewById(R.id.volumeUpButton)
         volumeDownButton = findViewById(R.id.volumeDownButton)
         frequencyButton = findViewById(R.id.frequencyButton)
         bluetoothButton = findViewById(R.id.bluetoothButton)
+        volumeProgressBar = findViewById(R.id.volumeProgressBar)
+        volumeProgressBar.progress = volumeSound
+        heartRateValueTextView.text = "$heartRateValue"
 
         // Check and request permissions
-        checkPermissions()
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.BODY_SENSORS) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.BODY_SENSORS),
-                REQUEST_PERMISSION_BODY_SENSORS)
-        }
+//        checkPermissions()
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BODY_SENSORS), 1)
+
+        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.INTERNET), 1)
 
         // Initialize SensorManager
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
@@ -111,11 +125,10 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         // Check if the device has a heart rate sensor
         heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
         if (heartRateSensor == null) {
-            // Heart rate sensor is not available on this device
             Toast.makeText(this, "Heart rate sensor not available", Toast.LENGTH_SHORT).show()
         } else {
             // Register sensor listener
-            sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_NORMAL)
+            sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_UI, 30000000)
         }
 
         // Button click listeners
@@ -134,20 +147,18 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         }
 
         bluetoothButton.setOnClickListener {
-            sendDataViaBluetooth()
+            sendDataViaWifi()
         }
     }
+    override fun onSensorChanged(event: SensorEvent) {
+        Log.d("","Bateu no SensorChanged" + event.values[0])
 
-//    override fun onDataChanged(dataEventBuffer: DataEventBuffer) {
-//        Log.d("","Bateu no DataChanged")
-//        for (event in dataEventBuffer) {
-//            if (event.type == DataEvent.TYPE_CHANGED && event.dataItem.uri.path == HEART_RATE_PATH) {
-//                // Extract heart rate data from the event
-//                heartRateValue = event.dataItem.toString()
-//                heartRateTextView.text = "Heart Rate" + heartRateValue + "BPM"
-//            }
-//        }
-//    }
+        if (event.sensor.type == Sensor.TYPE_HEART_RATE && event.values[0] != 0f) {
+            val heartRateValue = event.values[0].toInt()
+            heartRateValueTextView.text = "$heartRateValue"
+        }
+        sensorManager.unregisterListener(this)
+    }
 
     private fun increaseVolume() {
         volumeSound = (volumeSound + 1).coerceIn(0, 10)
@@ -160,7 +171,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     }
 
     private fun updateVolumeTextView() {
-        volumeTextView.text = "Volume Sound:" + volumeSound.toString()
+        volumeProgressBar.updateProgress(volumeSound)
     }
 
     private fun showFrequencyOptionsDialog() {
@@ -175,114 +186,86 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         dialog.show()
     }
 
-    private fun sendDataViaBluetooth() {
-
+    private fun sendDataViaWifi(){
         val jsonData = JSONObject().apply {
-            put("batida", heartRateValue)
-            put("vol", volumeSound)
-            put("tempo", frequencyTime)
-        }
+            put("batida", 50)
+            put("vol", 10)
+            put("tempo", 10)
+        }.toString()
 
-        val mainJsonObject = JSONObject().apply {
-            put("smartwatch", jsonData)
-        }
+        val url = "http://192.168.4.1/json"
+//        val client = OkHttpClient()
+//
+//        val jsonType = "application/json".toMediaType();
+//
+//        val body = jsonData.toRequestBody(jsonType);
+//        val request = Request.Builder()
+//            .url(url)
+//            .post(body)
+//            .build();
+//        try {
+//            val response = client.newCall(request).execute()
+//            Log.d("Response HTTP", response.message);
+//            Log.d("Response HTTP", response.body.toString());
+//        } catch (e: Exception){Log.d("Response HTTP","Error: ${e.message}")}
 
 
-        // Get Bluetooth adapter
-        val bluetoothAdapter: BluetoothAdapter? = BluetoothAdapter.getDefaultAdapter()
-        var bluetoothSocket: BluetoothSocket? = null
 
-        // Ensure Bluetooth is supported on this device
-        if (bluetoothAdapter == null) {
-            Toast.makeText(this, "Bluetooth is not supported on this device", Toast.LENGTH_SHORT).show()
-            return
-        }
 
-        // Ensure Bluetooth is enabled
-        if (!bluetoothAdapter.isEnabled) {
-            Toast.makeText(this, "Bluetooth is not enabled", Toast.LENGTH_SHORT).show()
-            return
-        }
+        val connection = URL(url).openConnection() as HttpURLConnection
+        connection.requestMethod = "POST"
+        connection.setRequestProperty("Content-Type", "application/json")
+        connection.doOutput = true
 
-        // Get the paired device you want to connect to
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_ADMIN) != PackageManager.PERMISSION_GRANTED) {
-            Log.d("BLUETOOTH PERMISSION ERROR", "Bluetooth Permission Not Granted")
-            ActivityCompat.requestPermissions(this,
-                arrayOf(Manifest.permission.BLUETOOTH_ADMIN),
-                1)
-        }
+        Log.d("Response HTTP", "Antes do  outputStream")
+        Log.d("Response HTTP", jsonData)
 
-        val pairedDevices = bluetoothAdapter.bondedDevices.toList()
+        try {
+            val outputStream = BufferedWriter(OutputStreamWriter(connection.outputStream, "UTF-8"))
+            Log.d("Response HTTP", "antes do Flush")
+            outputStream.write(jsonData)
+            outputStream.flush()
+            Log.d("Response HTTP", "depois do Flush")
+            Toast.makeText(this, "Sending Value", Toast.LENGTH_SHORT).show()
+            val responseCode = connection.responseCode
+            val response = StringBuilder()
 
-        // If bluetooth is not connected, show a Dialog to select Address.
-        if (deviceAddress == "00:00:00:00:00:00") {
-            val deviceNames = pairedDevices.map { it.name }.toTypedArray()
-
-            val builder = AlertDialog.Builder(this)
-            builder.setTitle("Select Bluetooth Device")
-            builder.setItems(deviceNames) { _, which ->
-                // User clicked on item at position 'which'
-                val selectedDevice = pairedDevices[which]
-                deviceAddress = selectedDevice.address
-                Toast.makeText(this, "Selected device: $deviceAddress", Toast.LENGTH_SHORT).show()
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                val reader = BufferedReader(InputStreamReader(connection.inputStream))
+                var line: String?
+                while (reader.readLine().also { line = it } != null) {
+                    response.append(line)
+                }
+                reader.close()
+            } else {
+                response.append("POST request failed with error code: $responseCode")
             }
 
+            connection.disconnect()
+            Log.d("Response HTTP", response.toString())
+        } catch (e: Exception){
+            Log.d("Response HTTP","Error: ${e.message}")}
 
-
-            val dialog = builder.create()
-            dialog.show()
-        }
-
-        val bluetoothDevice = pairedDevices.find { it.address == deviceAddress }
-
-        if (bluetoothDevice == null) {
-            Toast.makeText(this, "Bluetooth is not enabled", Toast.LENGTH_SHORT).show()
-            return
-        }
-
-        // Connect to the device
-        try {
-//            val uuid = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB")
-            val uuids = bluetoothDevice.uuids as Array<ParcelUuid>
-
-            Log.d("", uuids.toString() + "valor do UUID: " + uuids[0].uuid.toString())
-
-            bluetoothSocket = bluetoothDevice.createRfcommSocketToServiceRecord(uuids[0].uuid)
-//            bluetoothSocket = bluetoothDevice.createInsecureRfcommSocketToServiceRecord(uuids[0].uuid)
-            bluetoothSocket.connect()
-
-            // Send data
-            val outputStream: OutputStream = bluetoothSocket!!.outputStream
-            val output = mainJsonObject.toString().toByteArray()
-            outputStream.write(output)
-
-            Toast.makeText(this, "Data sent via Bluetooth", Toast.LENGTH_SHORT).show()
-        } catch (e: Exception) {
-            Toast.makeText(this, "Failed to send data via Bluetooth: ${e.message}", Toast.LENGTH_SHORT).show()
-            Log.d("", "Failed to send data via Bluetooth: ${e.message}")
-        } finally {
-            // Close the socket after sending data
-            bluetoothSocket?.close()
-        }
     }
 
-    companion object {
-        private const val REQUEST_PERMISSION_BODY_SENSORS = 1
+
+
+    override fun onPause(){
+        super.onPause()
+        sensorManager.unregisterListener(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_UI, 30000000)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        // Unregister sensor listener to release resources
+//         Unregister sensor listener to release resources
         sensorManager.unregisterListener(this)
     }
 
-    override fun onSensorChanged(event: SensorEvent?) {
-        Log.d("", "Acessou Sensor Changed")
-        if (event?.sensor?.type == Sensor.TYPE_HEART_RATE) {
-            heartRateValue = event.values?.get(0)?.toInt()!!
-        }
-        heartRateTextView.text = "Heart Rate: " + heartRateValue + " BPM"
-    }
 
     override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
         TODO("Not yet implemented")

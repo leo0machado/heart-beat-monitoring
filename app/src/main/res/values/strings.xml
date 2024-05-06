@@ -5,7 +5,7 @@
     values-round/strings.xml for round devices.
     -->
     <string name="hello_world">From the Square world,\nHello, %1$s!</string>
-    <string name="heart_rate">Heart Rate:</string>
+    <string name="heart_rate">Heart rate</string>
     <string name="volume_sound">Volume Sound:</string>
     <string name="frequency_time">Frequency Time:</string>
     <string name="volume_up">Vol.Up</string>

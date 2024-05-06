@@ -1,7 +1,7 @@
 <resources>
     <string name="hello_world">From the Round world,\nHello, %1$s!</string>
-    <string name="heart_rate">Heart Rate:</string>
-    <string name="volume_sound">Volume Sound:</string>
+    <string name="heart_rate">Heart rate</string>
+    <string name="volume_sound">Volume sound</string>
     <string name="frequency_time">Frequency Change:</string>
     <string name="volume_up">Vol.Up</string>
     <string name="volume_down">Vol.Down</string>

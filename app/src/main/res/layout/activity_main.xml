@@ -3,82 +3,104 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@drawable/background_image"
     android:padding="12dp"
     tools:ignore="MissingClass">
     <!--total size: 227dp x 227dp-->
+    <!--total size: 336px x 336px-->
+    <!--total size: 298px x 298px-->
 
     <TextView
         android:id="@+id/heartRateTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="@string/heart_rate"
+        android:textStyle="bold"
         android:gravity="center"
         android:layout_gravity="center_horizontal"
-        android:textSize="16sp"
+        android:textSize="10sp"
+        android:textColor="#FFFFFF"
         android:layout_marginStart="0dp"
-        android:layout_marginTop= "90dp"
+        android:layout_marginTop= "84dp"
         />
 
     <TextView
-        android:id="@+id/volumeTextView"
+        android:id="@+id/heartRateValueTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/volume_sound"
+        android:textStyle="bold"
         android:gravity="center"
         android:layout_gravity="center_horizontal"
-        android:textSize="8sp"
+        android:textSize="60sp"
+        android:textColor="#FFFFFF"
         android:layout_marginStart="0dp"
-        android:layout_marginEnd="0dp"
-        android:layout_marginTop="0dp"
+        android:layout_marginTop= "10dp"
         />
 
-    <Button
+    <ImageButton
         android:id="@+id/volumeUpButton"
-        android:background="@drawable/oval_button_background"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_below="@id/volumeTextView"
-        android:text="@string/volume_up"
-        android:textSize="8sp"
-        android:layout_marginStart="110dp"
-        android:layout_marginEnd="0dp"
-        android:layout_marginTop="25dp"/>
+        android:layout_width="40px"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/volumeDownButton"
+        android:layout_marginStart="280px"
+        android:background="@null"
+        android:layout_marginTop="80dp"
+        android:src="@drawable/plus_image" />
 
-    <Button
+    <ImageButton
         android:id="@+id/volumeDownButton"
-        android:background="@drawable/oval_button_background"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:textSize="8sp"
+        android:layout_width="wrap_content"
+        android:layout_height="40px"
+        android:src="@drawable/minus_image"
         android:layout_below="@id/volumeUpButton"
-        android:text="@string/volume_down"
-        android:layout_marginStart="40dp"
-        android:layout_marginEnd="0dp"
-        android:layout_marginTop="25dp"
+        android:layout_marginStart="20px"
+        android:background="@null"
+        android:layout_marginTop="80dp"
         />
 
     <Button
         android:id="@+id/frequencyButton"
-        android:layout_width="50dp"
-        android:layout_height="wrap_content"
+        android:layout_width="100px"
+        android:layout_height="50px"
         android:layout_below="@id/volumeDownButton"
-        android:layout_marginStart="40dp"
-        android:layout_marginTop="140dp"
+        android:layout_marginStart="55px"
+        android:layout_marginTop="266px"
         android:layout_marginEnd="0dp"
         android:background="@drawable/oval_button_background"
-        android:text="@string/set_frequency"
+        android:paddingStart="5dp"
+        android:paddingEnd="5dp"
+        android:text="Reps"
+        android:textColor="#241460"
         android:textSize="8sp" />
+
+    <!--        android:drawableStart="@drawable/plus_image"-->
+    <!--        android:drawableTint="#241460"-->
 
     <Button
         android:id="@+id/bluetoothButton"
-        android:background="@drawable/oval_button_background"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:textSize="8sp"
-        android:layout_below="@id/frequencyButton"
-        android:layout_marginStart="110dp"
+        android:layout_width="100px"
+        android:layout_height="50px"
+        android:layout_marginStart="181px"
         android:layout_marginEnd= "0dp"
-        android:layout_marginTop="140dp"
-        android:text="@string/send_via_bluetooth" />
+        android:layout_marginTop="266px"
+        android:background="@drawable/oval_button_background"
+        android:text="Send"
+        android:textColor="#241460"
+        android:textSize="8sp" />
+
+    <com.example.bpmheartbeat.presentation.SemicircleProgressBar
+        android:id="@+id/volumeProgressBar"
+        android:layout_width="400px"
+        android:layout_height="160px"
+        android:gravity="center"
+        android:layout_gravity="center_horizontal"
+        android:max="10"
+        android:progress="0"
+        android:progressTint="#FFFFFF"
+        style="@style/CurvedProgressBar"
+        android:layout_marginStart="0dp"
+        android:layout_marginTop="0px"/>
+
+
 
 </androidx.wear.widget.BoxInsetLayout>

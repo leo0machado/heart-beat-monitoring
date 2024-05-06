@@ -40,27 +40,33 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.http.Body
+import retrofit2.http.POST
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlin.random.Random
 
 
 class MainActivity : ComponentActivity(), SensorEventListener {
-    private lateinit var heartRateTextView: TextView
     private lateinit var heartRateValueTextView: TextView
     private lateinit var volumeUpButton: ImageButton
     private lateinit var volumeDownButton: ImageButton
-    private lateinit var frequencyButton: Button
-    private lateinit var bluetoothButton: Button
+    private lateinit var frequencyButton: ImageButton
+    private lateinit var bluetoothButton: ImageButton
     private lateinit var volumeProgressBar: SemicircleProgressBar
 
     private var volumeSound = 5
     private var frequencyTime = 10
     private val frequencyOptions = arrayOf("10", "30", "60")
-    private var heartRateValue = 60
+    private var heartRateValue = Random.nextInt(60,80)
     private lateinit var sensorManager: SensorManager
     private var heartRateSensor: Sensor? = null
     private var deviceAddress = "00:00:00:00:00:00"
@@ -98,12 +104,23 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         }
     }
 
+
+    data class DataModel(
+        val batida: Int,
+        val vol: Int,
+        val tempo: Int
+    )
+
+    interface ApiService {
+        @POST("/json")
+        fun sendJson(@Body data: DataModel): Call<Void>
+
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         // Initialize views
-        heartRateTextView = findViewById(R.id.heartRateTextView)
         heartRateValueTextView = findViewById(R.id.heartRateValueTextView)
         volumeUpButton = findViewById(R.id.volumeUpButton)
         volumeDownButton = findViewById(R.id.volumeDownButton)
@@ -186,68 +203,58 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         dialog.show()
     }
 
-    private fun sendDataViaWifi(){
-        val jsonData = JSONObject().apply {
-            put("batida", 50)
-            put("vol", 10)
-            put("tempo", 10)
-        }.toString()
-
-        val url = "http://192.168.4.1/json"
-//        val client = OkHttpClient()
+    private fun sendDataViaWifi() {
+        // Definir a URL do servidor
+        val url = "http://192.168.4.1"
+//        val jsonData = DataModel(50, 10, 10)
+//        // Configurar o OkHttpClient com tempos limite personalizados e adicionar interceptor
+//        val client = createOkHttpClient()
 //
-//        val jsonType = "application/json".toMediaType();
+//        val retrofit = Retrofit.Builder()
+//            .baseUrl(url)
+//            .client(client) // Configurar o cliente OkHttpClient personalizado
+//            .addConverterFactory(GsonConverterFactory.create())
+//            .build()
 //
-//        val body = jsonData.toRequestBody(jsonType);
-//        val request = Request.Builder()
-//            .url(url)
-//            .post(body)
-//            .build();
-//        try {
-//            val response = client.newCall(request).execute()
-//            Log.d("Response HTTP", response.message);
-//            Log.d("Response HTTP", response.body.toString());
-//        } catch (e: Exception){Log.d("Response HTTP","Error: ${e.message}")}
-
-
-
-
-        val connection = URL(url).openConnection() as HttpURLConnection
-        connection.requestMethod = "POST"
-        connection.setRequestProperty("Content-Type", "application/json")
-        connection.doOutput = true
-
-        Log.d("Response HTTP", "Antes do  outputStream")
-        Log.d("Response HTTP", jsonData)
-
-        try {
-            val outputStream = BufferedWriter(OutputStreamWriter(connection.outputStream, "UTF-8"))
-            Log.d("Response HTTP", "antes do Flush")
-            outputStream.write(jsonData)
-            outputStream.flush()
-            Log.d("Response HTTP", "depois do Flush")
-            Toast.makeText(this, "Sending Value", Toast.LENGTH_SHORT).show()
-            val responseCode = connection.responseCode
-            val response = StringBuilder()
-
-            if (responseCode == HttpURLConnection.HTTP_OK) {
-                val reader = BufferedReader(InputStreamReader(connection.inputStream))
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    response.append(line)
-                }
-                reader.close()
-            } else {
-                response.append("POST request failed with error code: $responseCode")
-            }
-
-            connection.disconnect()
-            Log.d("Response HTTP", response.toString())
-        } catch (e: Exception){
-            Log.d("Response HTTP","Error: ${e.message}")}
-
+//        val service = retrofit.create(ApiService::class.java)
+//        //  val gson = Gson()
+//        // val jsonData = gson.toJson(DataModel(50, 10, 10))
+//        // Enviar uma solicitação POST com o JSON
+//        service.sendJson(jsonData).enqueue(object : Callback<Void> {
+//            override fun onResponse(call: Call<Void>, response: Response<Void>) {
+//                if (response.isSuccessful) {
+//                    // Sucesso na solicitação
+//                    Toast.makeText(
+//                        this@MainActivity,
+//                        "Dados enviados com sucesso",
+//                        Toast.LENGTH_SHORT
+//                    ).show()
+//                    Log.d("TAG", "Dados enviados com sucesso")
+//                } else {
+//                    // Código de resposta de erro
+//                    val message = response.message()
+//                    // Lidar com erro
+//                    Toast.makeText(
+//                        this@MainActivity,
+//                        "Erro na solicitação: $message",
+//                        Toast.LENGTH_SHORT
+//                    ).show()
+//                    Log.e("TAG", "Erro na solicitação: $message")
+//                }
+//            }
+//
+//            override fun onFailure(call: Call<Void>, t: Throwable) {
+//                // Falha na solicitação
+//                // Lidar com erro
+//                Toast.makeText(
+//                    this@MainActivity,
+//                    "Falha na solicitação: ${t.message}",
+//                    Toast.LENGTH_SHORT
+//                ).show()
+//                Log.e("TAG", "Falha na solicitação: ${t.message}", t)
+//            }
+//        })
     }
-
 
 
     override fun onPause(){
@@ -257,6 +264,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     override fun onResume() {
         super.onResume()
+         heartRateValueTextView.text = Random.nextInt(70,101).toString()
         sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_UI, 30000000)
     }
 

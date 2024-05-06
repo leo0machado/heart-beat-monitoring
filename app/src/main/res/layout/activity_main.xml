@@ -10,10 +10,11 @@
     <!--total size: 336px x 336px-->
     <!--total size: 298px x 298px-->
 
-    <TextView
+    <ImageView
         android:id="@+id/heartRateTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:src="@drawable/heart_rate"
         android:text="@string/heart_rate"
         android:textStyle="bold"
         android:gravity="center"
@@ -58,32 +59,31 @@
         android:layout_marginTop="80dp"
         />
 
-    <Button
+    <ImageButton
         android:id="@+id/frequencyButton"
-        android:layout_width="100px"
-        android:layout_height="50px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:layout_below="@id/volumeDownButton"
-        android:layout_marginStart="55px"
-        android:layout_marginTop="266px"
+        android:src="@drawable/tempo_image"
+        android:layout_marginStart="25px"
+        android:layout_marginTop="236px"
         android:layout_marginEnd="0dp"
-        android:background="@drawable/oval_button_background"
+        android:background="@null"
         android:paddingStart="5dp"
-        android:paddingEnd="5dp"
-        android:text="Reps"
-        android:textColor="#241460"
-        android:textSize="8sp" />
+        android:paddingEnd="5dp"/>
 
     <!--        android:drawableStart="@drawable/plus_image"-->
     <!--        android:drawableTint="#241460"-->
 
-    <Button
+    <ImageButton
         android:id="@+id/bluetoothButton"
-        android:layout_width="100px"
-        android:layout_height="50px"
-        android:layout_marginStart="181px"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/send_image"
+        android:layout_marginStart="168px"
         android:layout_marginEnd= "0dp"
-        android:layout_marginTop="266px"
-        android:background="@drawable/oval_button_background"
+        android:layout_marginTop="236px"
+        android:background="@null"
         android:text="Send"
         android:textColor="#241460"
         android:textSize="8sp" />

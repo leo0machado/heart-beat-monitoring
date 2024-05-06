@@ -59,6 +59,8 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
     implementation(libs.wear)
+    implementation("com.squareup.okhttp3:okhttp:3.2.0")
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("androidx.health:health-services-client:1.0.0-rc02")
     implementation("com.google.guava:guava:30.1.1-android")
     implementation("androidx.concurrent:concurrent-futures-ktx:1.1.0")

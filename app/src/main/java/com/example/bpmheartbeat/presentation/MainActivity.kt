@@ -54,8 +54,18 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.random.Random
 
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.collect
 
-class MainActivity : ComponentActivity(), SensorEventListener {
+
+//class MainActivity : ComponentActivity(), SensorEventListener {
+class MainActivity : ComponentActivity() {
     private lateinit var heartRateValueTextView: TextView
     private lateinit var volumeUpButton: ImageButton
     private lateinit var volumeDownButton: ImageButton
@@ -116,10 +126,14 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         fun sendJson(@Body data: DataModel): Call<Void>
 
     }
+
+    private lateinit var permissionLauncher: ActivityResultLauncher<String>
+
+    private val viewModel: MainViewModel by viewModels()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
         // Initialize views
         heartRateValueTextView = findViewById(R.id.heartRateValueTextView)
         volumeUpButton = findViewById(R.id.volumeUpButton)
@@ -130,52 +144,93 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         volumeProgressBar.progress = volumeSound
         heartRateValueTextView.text = "$heartRateValue"
 
-        // Check and request permissions
-//        checkPermissions()
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BODY_SENSORS), 1)
 
-        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.INTERNET), 1)
+        permissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { result ->
+                when (result) {
+                    true -> {
+                        Log.i("Health Manager", "Body sensors permission granted")
+                        // Only measure while the activity is at least in STARTED state.
+                        // MeasureClient provides frequent updates, which requires increasing the
+                        // sampling rate of device sensors, so we must be careful not to remain
+                        // registered any longer than necessary.
+                        lifecycleScope.launchWhenStarted {
+                            viewModel.measureHeartRate()
+                            heartRateValueTextView.text = viewModel.heartRateBpm.toString()
+                        }
+                    }
+                    false -> Log.i("HealthManager", "Body sensors permission not granted")
+                }
+            }
 
-        // Initialize SensorManager
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-
-        // Check if the device has a heart rate sensor
-        heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
-        if (heartRateSensor == null) {
-            Toast.makeText(this, "Heart rate sensor not available", Toast.LENGTH_SHORT).show()
-        } else {
-            // Register sensor listener
-            sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_UI, 30000000)
-        }
-
-        // Button click listeners
-        volumeUpButton.setOnClickListener {
-            increaseVolume()
-            Log.d("","Volume Aumentado")
-        }
-
-        volumeDownButton.setOnClickListener {
-            decreaseVolume()
-            Log.d("","Volume Abaixado")
-        }
-
-        frequencyButton.setOnClickListener {
-            showFrequencyOptionsDialog()
-        }
-
-        bluetoothButton.setOnClickListener {
-            sendDataViaWifi()
-        }
     }
-    override fun onSensorChanged(event: SensorEvent) {
-        Log.d("","Bateu no SensorChanged" + event.values[0])
 
-        if (event.sensor.type == Sensor.TYPE_HEART_RATE && event.values[0] != 0f) {
-            val heartRateValue = event.values[0].toInt()
-            heartRateValueTextView.text = "$heartRateValue"
-        }
-        sensorManager.unregisterListener(this)
+    override fun onStart() {
+        super.onStart()
+        permissionLauncher.launch(android.Manifest.permission.BODY_SENSORS)
     }
+
+
+//    override fun onCreate(savedInstanceState: Bundle?) {
+//        super.onCreate(savedInstanceState)
+//        setContentView(R.layout.activity_main)
+//
+//        // Initialize views
+//        heartRateValueTextView = findViewById(R.id.heartRateValueTextView)
+//        volumeUpButton = findViewById(R.id.volumeUpButton)
+//        volumeDownButton = findViewById(R.id.volumeDownButton)
+//        frequencyButton = findViewById(R.id.frequencyButton)
+//        bluetoothButton = findViewById(R.id.bluetoothButton)
+//        volumeProgressBar = findViewById(R.id.volumeProgressBar)
+//        volumeProgressBar.progress = volumeSound
+//        heartRateValueTextView.text = "$heartRateValue"
+//
+//        // Check and request permissions
+////        checkPermissions()
+//        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.BODY_SENSORS), 1)
+//
+//        ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.INTERNET), 1)
+//
+//        // Initialize SensorManager
+//        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+//
+//        // Check if the device has a heart rate sensor
+//        heartRateSensor = sensorManager.getDefaultSensor(Sensor.TYPE_HEART_RATE)
+//        if (heartRateSensor == null) {
+//            Toast.makeText(this, "Heart rate sensor not available", Toast.LENGTH_SHORT).show()
+//        } else {
+//            // Register sensor listener
+//            sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_UI, 30000000)
+//        }
+//
+//        // Button click listeners
+//        volumeUpButton.setOnClickListener {
+//            increaseVolume()
+//            Log.d("","Volume Aumentado")
+//        }
+//
+//        volumeDownButton.setOnClickListener {
+//            decreaseVolume()
+//            Log.d("","Volume Abaixado")
+//        }
+//
+//        frequencyButton.setOnClickListener {
+//            showFrequencyOptionsDialog()
+//        }
+//
+//        bluetoothButton.setOnClickListener {
+//            sendDataViaWifi()
+//        }
+//    }
+////    override fun onSensorChanged(event: SensorEvent) {
+////        Log.d("","Bateu no SensorChanged" + event.values[0])
+////
+////        if (event.sensor.type == Sensor.TYPE_HEART_RATE && event.values[0] != 0f) {
+////            val heartRateValue = event.values[0].toInt()
+////            heartRateValueTextView.text = "$heartRateValue"
+////        }
+////        sensorManager.unregisterListener(this)
+////    }
 
     private fun increaseVolume() {
         volumeSound = (volumeSound + 1).coerceIn(0, 10)
@@ -257,25 +312,5 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     }
 
 
-    override fun onPause(){
-        super.onPause()
-        sensorManager.unregisterListener(this)
-    }
 
-    override fun onResume() {
-        super.onResume()
-         heartRateValueTextView.text = Random.nextInt(70,101).toString()
-        sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_UI, 30000000)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-//         Unregister sensor listener to release resources
-        sensorManager.unregisterListener(this)
-    }
-
-
-    override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {
-        TODO("Not yet implemented")
-    }
 }

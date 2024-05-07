@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.core.splashscreen)
     implementation(libs.wear)
+    implementation ("javax.inject:javax.inject:1")
     implementation("com.squareup.okhttp3:okhttp:3.2.0")
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("androidx.health:health-services-client:1.0.0-rc02")
@@ -68,4 +69,9 @@ dependencies {
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
+
+    // Hilt dependency injection
+    implementation("com.google.dagger:hilt-android:2.51.1")
+    implementation("androidx.hilt:hilt-work:1.2.0")
+
 }

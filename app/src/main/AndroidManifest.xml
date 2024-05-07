@@ -21,6 +21,10 @@
     <uses-feature android:name="android.hardware.type.watch" />
 
 
+    <queries>
+        <package android:name="com.google.android.wearable.healthservices" />
+    </queries>
+
 
     <application
         android:networkSecurityConfig="@xml/network_security_config"

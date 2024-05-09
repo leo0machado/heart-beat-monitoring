@@ -39,19 +39,25 @@ import com.example.bpmheartbeat.R
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.runBlocking
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
 import java.io.BufferedReader
 import java.io.BufferedWriter
+import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 
@@ -172,7 +178,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
         if (event.sensor.type == Sensor.TYPE_HEART_RATE && event.values[0] != 0f) {
             val heartRateValue = event.values[0].toInt()
-            heartRateValueTextView.text = "$heartRateValue"
+//            heartRateValueTextView.text = "$heartRateValue"
         }
         sensorManager.unregisterListener(this)
     }
@@ -203,57 +209,74 @@ class MainActivity : ComponentActivity(), SensorEventListener {
         dialog.show()
     }
 
+    class ContentLengthInterceptor : Interceptor {
+        @Throws(IOException::class)
+        override fun intercept(chain: Interceptor.Chain): okhttp3.Response {
+            val originalRequest: Request = chain.request()
+            val requestBody = originalRequest.body
+            val contentLength = requestBody?.contentLength() ?: 0
+            val requestBuilder: Request.Builder = originalRequest.newBuilder()
+                .header("Content-Length", contentLength.toString())
+            val request: Request = requestBuilder.build()
+            return chain.proceed(request)
+        }
+    }
+    fun createOkHttpClient(): OkHttpClient {
+        return OkHttpClient.Builder()
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(15, TimeUnit.SECONDS)
+            .addInterceptor(ContentLengthInterceptor())
+            .build()
+    }
     private fun sendDataViaWifi() {
         // Definir a URL do servidor
         val url = "http://192.168.4.1"
-//        val jsonData = DataModel(50, 10, 10)
-//        // Configurar o OkHttpClient com tempos limite personalizados e adicionar interceptor
-//        val client = createOkHttpClient()
-//
-//        val retrofit = Retrofit.Builder()
-//            .baseUrl(url)
-//            .client(client) // Configurar o cliente OkHttpClient personalizado
-//            .addConverterFactory(GsonConverterFactory.create())
-//            .build()
-//
-//        val service = retrofit.create(ApiService::class.java)
-//        //  val gson = Gson()
-//        // val jsonData = gson.toJson(DataModel(50, 10, 10))
-//        // Enviar uma solicitação POST com o JSON
-//        service.sendJson(jsonData).enqueue(object : Callback<Void> {
-//            override fun onResponse(call: Call<Void>, response: Response<Void>) {
-//                if (response.isSuccessful) {
-//                    // Sucesso na solicitação
-//                    Toast.makeText(
-//                        this@MainActivity,
-//                        "Dados enviados com sucesso",
-//                        Toast.LENGTH_SHORT
-//                    ).show()
-//                    Log.d("TAG", "Dados enviados com sucesso")
-//                } else {
-//                    // Código de resposta de erro
-//                    val message = response.message()
-//                    // Lidar com erro
-//                    Toast.makeText(
-//                        this@MainActivity,
-//                        "Erro na solicitação: $message",
-//                        Toast.LENGTH_SHORT
-//                    ).show()
-//                    Log.e("TAG", "Erro na solicitação: $message")
-//                }
-//            }
-//
-//            override fun onFailure(call: Call<Void>, t: Throwable) {
-//                // Falha na solicitação
-//                // Lidar com erro
-//                Toast.makeText(
-//                    this@MainActivity,
-//                    "Falha na solicitação: ${t.message}",
-//                    Toast.LENGTH_SHORT
-//                ).show()
-//                Log.e("TAG", "Falha na solicitação: ${t.message}", t)
-//            }
-//        })
+        val jsonData = DataModel(heartRateValue, volumeSound, frequencyTime)
+        // Configurar o OkHttpClient com tempos limite personalizados e adicionar interceptor
+        val client = createOkHttpClient()
+
+        val retrofit = Retrofit.Builder()
+            .baseUrl(url)
+            .client(client) // Configurar o cliente OkHttpClient personalizado
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+
+        val service = retrofit.create(ApiService::class.java)
+        // Enviar uma solicitação POST com o JSON
+        service.sendJson(jsonData).enqueue(object : Callback<Void> {
+            override fun onResponse(call: Call<Void>, response: Response<Void>) {
+                if (response.isSuccessful) {
+                    // Sucesso na solicitação
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Dados enviados com sucesso",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    Log.d("TAG", "Dados enviados com sucesso")
+                } else {
+                    // Código de resposta de erro
+                    val message = response.message()
+                    // Lidar com erro
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Erro na solicitação: $message",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                    Log.e("TAG", "Erro na solicitação: $message")
+                }
+            }
+
+            override fun onFailure(call: Call<Void>, t: Throwable) {
+                // Falha na solicitação
+                // Lidar com erro
+                Toast.makeText(
+                    this@MainActivity,
+                    "Falha na solicitação: ${t.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+                Log.e("TAG", "Falha na solicitação: ${t.message}", t)
+            }
+        })
     }
 
 
@@ -264,7 +287,9 @@ class MainActivity : ComponentActivity(), SensorEventListener {
 
     override fun onResume() {
         super.onResume()
-         heartRateValueTextView.text = Random.nextInt(70,101).toString()
+        heartRateValue = Random.nextInt(65,101)
+         heartRateValueTextView.text = "$heartRateValue"
+
         sensorManager.registerListener(this, heartRateSensor, SensorManager.SENSOR_DELAY_UI, 30000000)
     }
 
